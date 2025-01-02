@@ -23,6 +23,14 @@
 \usepackage{hyperref}
 %\usepackage{txfonts}
 \usepackage{mathdots}
+\usepackage{titlesec}
+
+\newcommand{\applysectionstyle}{\titleformat{\section}[block]
+	{\bfseries\huge}    % Định dạng cho section (đậm và kích thước chữ lớn)
+	{Chương \thesection} % Thêm chữ "Chương" và số chương
+	{1em}               % Khoảng cách giữa số chương và tên chương
+	{}                  % Không có nội dung trước tiêu đề
+}
 
 
 
@@ -127,7 +135,7 @@
 			\begin{tabular}{rrl}
 				\hspace{5 cm} & Giảng viên hướng dẫn: & Nguyễn Đức Dũng\\
 				& Sinh viên thực hiện: & Lê Quang Hiển - 2113376 \\
-				& & Lê Trung Trực - MSSV \\
+				& & Lê Trung Trực - 2115161 \\
 			\end{tabular}
 		\end{table}
 		
@@ -165,60 +173,24 @@
 			& &  & -Nộp bài tập lớn &\\
 			\hline 
 			%%%%%Student 2%%%%%%%%%%%
-			\multirow{3}{*}{2} & \multirow{3}{*}{Lê Đình Huy} & \multirow{3}{*}{2113481} & \multirow{3}{*}{-Thực hiện bài tập 3} & \multirow{3}{*}{100\%}\\
+			\multirow{3}{*}{2} & \multirow{3}{*}{Lê Trung Trực} & \multirow{3}{*}{2115161} & \multirow{3}{*}{-Thực hiện bài tập 3} & \multirow{3}{*}{100\%}\\
 			& &  &  &\\
 			& &  &  &\\
 			\hline
 		\end{tabular}
 	\end{flushleft}
-	
-	\newpage
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Relation \& Counting}
-\subsection{Problem 1}
-...
-
-\subsection{Problem 2}
-...
-
-\subsection{Bonus exercises}
-...
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Probabilty}
-\subsection{Problem 1}
-...
-
-\subsection{Problem 2}
-...
-
-\subsection{Bonus exercises}
-...
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-\section{Graph}
-\subsection{Problem 1}
-...
-
-\subsection{Problem 2}
-...
-
-\subsection{Bonus exercises}
-...
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
-\addcontentsline{toc}{section}{\protect\numberline{}Tài liệu tham khảo}
-%\renewcommand\refname{Tài liệu tham khảo}
-\begin{thebibliography}{80}
-	\bibitem{bib1}
-	...
-	\bibitem{bib2}
-	...
-	
-	
-\end{thebibliography}
+\applysectionstyle
+\input{introduction}
+\input{theory}
+\input{methodology}
+\input{experiments_results}
+\input{evaluation}
+\input{conclusion}
+\input{bibliography}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \end{document}
 
