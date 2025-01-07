@@ -5,8 +5,33 @@ Hiệu quả của các thuật toán phát hiện và khớp đặc trưng như
 
 \subsection{Phương pháp đánh giá}
 \subsubsection{Tốc độ xử lý}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=12cm]{images/SpeedComparison.png}
+	\caption{Tốc độ tính toán của bộ mô tả điểm khóa}
+\end{figure}
+Có thể thấy tốc độ xử lý của bộ mô tả SURF đã cải thiện so với SIFT vì sử dụng các phép tính đơn giản hơn rất nhiều. Tuy nhiên đó cũng chỉ là khoảng cách tương đối nhỏ. Trong khi đó, bộ mô tả ORB có thời gian tính toán nhanh vượt trội so với hai phương pháp trên.
 \subsubsection{Độ chính xác}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=12cm]{images/AccuracyComparison.png}
+	\caption{Số lượng các điểm đặc trưng tìm được}
+\end{figure}
+Có thể thấy bộ mô tả ORB thu được số lượng điểm đặc trưng nhiều nhất, gần gấp ba lần so với SURF. SIFT thì cho ra số lượng điểm đặc trưng thấp nhất. Lý do cho điều này là ORB không tìm những điểm cực trị cục bộ một cách tuyệt đối trong lân cận mà chỉ cần là cực trị của tập hợp các điểm liên tiếp mà ORB sử dụng để so sánh và xác định cực đại cục bộ.
 \subsubsection{Độ tin cậy}
-\subsubsection{Tầi nguyên sử dụng}
+Trong cả hai trường hợp, độ tin cậy của bộ mô tả ORB luôn cao nhất, có lúc đạt đến tuyệt đối.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=12cm]{images/Precision.png}
+	\caption{Tỷ lệ đối sánh đúng trong khi cường đồ sáng cao}
+\end{figure}
+Trong trường hợp ảnh được tăng cường độ sáng, độ tin cậy của bộ mô tả SURF và SIFT là bằng nhau.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=12cm]{images/Precision1.png}
+	\caption{Tỷ lệ đối sánh đúng khi ảnh bị xoay}
+\end{figure}
+Còn trong trường hợp ảnh được biến đổi xoay, độ tin cậy của bộ mô tả tăng lên 100\% trong khi độ tin cậy của SIFT là hầu như không đổi.
 
 \subsection{Kết quả và so sánh}
+Hiệu quả của bộ mô tả ORB được chứng minh là hiệu quả nhất và kết quả đầu ra bất biến với nhiều phép biến đổi.
