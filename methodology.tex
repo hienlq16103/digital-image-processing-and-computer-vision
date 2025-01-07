@@ -302,7 +302,7 @@ Nhóm nghiên cứu sẽ thử nghiệm với 2 bức ảnh tự chụp, một �
 \end{itemize}
 
 \subsubsection{Triển khai các thuật toán}
-Phần này mô tả các bước triển khai mã nguồn để thực hiện khớp đặc trưng giữa hai hình ảnh. Sau khi đã thiết lập môi trường phát triển và cài đặt các thư viện cần thiết, nhóm sẽ sử dụng các công cụ và thư viện như OpenCV và FLANN để phát hiện và khớp các đặc trưng giữa hai ảnh. Mã nguồn sẽ bao gồm các bước phát hiện đặc trưng, kết nối các điểm tương đồng giữa các ảnh, và lọc kết quả không chính xác.
+Phần này mô tả các bước triển khai mã nguồn để thực hiện khớp đặc trưng giữa hai hình ảnh. Sau khi đã thiết lập môi trường phát triển và cài đặt các thư viện cần thiết, nhóm sẽ sử dụng các công cụ và thư viện như OpenCV và numpy để phát hiện và khớp các đặc trưng giữa hai ảnh. Mã nguồn sẽ bao gồm các bước phát hiện đặc trưng, kết nối các điểm tương đồng giữa các ảnh, và lọc kết quả không chính xác.
 \subsubsection*{1. Phát hiện và mô tả các đặc trưng của một ảnh}
 Import các thư viện sử dụng:
 \begin{lstlisting}[language=Python]
@@ -433,6 +433,10 @@ Nhóm sẽ tiếp tục triển khai mã nguồn để khớp các đặc trưng
 \begin{itemize}
 	\item \texttt{cv.FlannBasedMatcher}: Tạo đối tượng FLANN-based matcher sử dụng cây K-D.
 	\item \texttt{flann.knnMatch}: Tìm các cặp khớp gần nhất bằng phương pháp k-NN.
+    \item \texttt{algorithm=1}: Sử dụng KD-Tree để tìm kiếm điểm gần nhất trong không gian đa chiều.
+	\item \texttt{trees=5}: Xác định số lượng cây KD-Tree trong mô hình.
+	\item \texttt{checks=50}: Số lần kiểm tra điểm kế nhau. Tăng giá trị này sẽ cải thiện độ chính xác nhưng đồng thời làm tăng thời gian tính toán.
+	\item \texttt{knnMatch()}: Hàm này tìm ra hai điểm gần nhất (\texttt{k=2}) cho mỗi descriptor từ ảnh thứ nhất trong tập descriptor của ảnh thứ hai, hỗ trợ cho việc áp dụng Lowe's Ratio Test ở bước sau để lọc các kết quả không chính xác.
 \end{itemize}
 \textbf{Vẽ các cặp điểm khớp và hiển thị hình ảnh}
 
