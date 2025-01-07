@@ -1,4 +1,551 @@
 \newpage
 \section{Phương Pháp Nghiên Cứu}
 \subsection{Quy trình khớp đặc trưng giữa hai hình ảnh}
-\subsection{Công cụ/Thư viện sử dụng}
+Để thực hiện việc khớp đặc trưng giữa hai hình ảnh, quy trình tổng quan bao gồm một chuỗi các bước từ phát hiện, mô tả đến khớp và lọc các đặc trưng. Mỗi bước đều đóng vai trò quan trọng trong việc đảm bảo độ chính xác và hiệu quả của quá trình khớp. Trong nghiên cứu này, nhóm nghiên cứu áp dụng các thuật toán phổ biến như SIFT, Brute-Force Matching, và RANSAC để phát hiện và khớp các đặc trưng, đồng thời loại bỏ nhiễu nhằm đạt được kết quả khớp đặc trưng đáng tin cậy. Quy trình này không chỉ đảm bảo tính ổn định trước các thay đổi về tỉ lệ, góc nhìn, và ánh sáng mà còn tạo cơ sở vững chắc cho các ứng dụng thị giác máy tính như ghép ảnh, nhận dạng đối tượng và theo dõi chuyển động.
+\subsubsection{Phát hiện đặc trưng (Feature Detection)}
+Trong bước này, các điểm đặc trưng (keypoints) được xác định từ hình ảnh. Điểm đặc trưng thường là các điểm có sự biến đổi cục bộ rõ rệt như góc cạnh, cạnh hoặc các vùng khác biệt.
+\begin{itemize}
+	\item \textbf{Thuật toán sử dụng}: Nhóm nghiên cứu sẽ sử dụng thuật toán SIFT để minh họa cho bước này vì khả năng phát hiện đặc trưng ổn định trước sự thay đổi tỉ lệ xoay và ánh sáng, đây cũng là thuật toán tạo nền tảng cho sự ra đời của các thuật toán sau này. Nhóm cũng xin được tham khảo bài báo gốc của tác giả của thuật toán này \textit{"Distinctive Image Features from Scale-Invariant Keypoints"} của D.Lowe (2004)\cite{D.Lowe}
+\end{itemize}
+	
+\textbf{Phát hiện các điểm cực trị trong không gian tỉ lệ (Scale-space Extrema Detection)}
+Mục tiêu của bước này là tìm các điểm đặc trưng có khă năng bất biến với tỉ lệ, xoay, ánh sáng và nhiễu.
+\textbf{Không gian tỉ lệ (Scale-space)} là một không gian được xây dựng bằng cách tìm những điểm bất biến với sự thay đổi tỉ lệ sao cho những điểm này ổn định ở các mức tỉ lệ khác nhau. SIFT sử dụng Gaussian Blur để làm mờ ảnh ở các mức tỉ lệ khác nhau và tìm điểm đặc trưng bằng cách phát hiện các cực trị (extrema) trong không gian này.
+Để định nghĩa một hình ảnh trong không gian tỉ lệ, ta sử dụng hàm $L(x,y,\sigma)$ được tính như sau:
+\[ L(x, y, \sigma) = G(x, y, \sigma) \ast I(x, y) \]
+Với $\ast$ là tích chập giữa hình ảnh $I(x, y)$ và hàm Gaussian:
+\[ G(x, y, \sigma) = \frac{1}{2\pi\sigma^{2}}e^{-(x^{2}+y^{2})/2\sigma^{2}} \]
+
+Một hàm Gaussian với giá trị $\sigma$ nhỏ sẽ có giá trị lớn với các góc nhỏ, trong khi mặt Gaussian với $\sigma$ lớn phù hợp với các góc lớn. Vì vậy, ta có thể tìm cực trị địa phương trên cả không gian và mức tỉ lệ, từ đó cho chúng ta một loạt các giá trị $(x, y, \sigma)$, nghĩa là sẽ có một điểm đặc trưng tiềm năng tại $(x, y)$ ở mức tỉ lệ $\sigma$.
+
+Để tìm đạo hàm của $L(x, y, \sigma)$ một cách hiệu quả mà không tốn nhiều tài nguyên máy tính, ta sử dụng hàm Difference of Gaussian (DoG) để tính xấp xỉ hàm LoG (đạo hàm bậc 2 của hàm $G(x, y, \sigma)$):
+\[ D(x, y, \sigma) = (G(x, y, k\sigma) - G(x, y, \sigma)) \ast I(x, y)
+= L(x, y, k\sigma) - L(x, y, \sigma). \]
+
+Có hai giá trị nữa cần được quan tâm là \textbf{Octave} và \textbf{Scale Levels}. Octave là một nhóm các ảnh được tạo ra từ ảnh gốc với độ phân giải giảm dần, giúp phát hiện điểm đặc trưng ở các tỷ lệ khác nhau. Mỗi Octave bao gồm nhiều Scale Levels, đại diện cho các mức độ phân giải khác nhau trong cùng một mức độ giảm kích thước ảnh. Khi áp dụng phép lọc Gaussian, các Scale Levels giúp tìm kiếm điểm đặc trưng không chỉ trong không gian 2D mà còn trong không gian Scale, cho phép phát hiện các điểm đặc trưng bền vững và không phụ thuộc vào tỷ lệ hay độ phân giải của ảnh. Quá trình này được minh trực quan hơn ở hình bên dưới:
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=12cm]{images/sift_dog.jpg}
+	\caption{Minh họa hàm Difference of Gaussian}
+\end{figure}
+
+Sau khi có được các điểm DoG, các điểm này sẽ được so sánh với 8 điểm lân cận trong cùng mức tỉ lệ, 9 điểm ở mức tỉ lệ cao hơn và 9 điểm ở mức tỉ lệ thấp hơn. Nếu điểm đó là một điểm cực trị (cực đại hoặc cực tiểu) so với các điểm được so sánh thì điểm đó sẽ trở thành một điểm đặc trưng tiềm năng hay nói cách khác là điểm đại diện tốt nhất ở một mức tỉ lệ nào đó. Hình bên dưới minh họa cho quá trình tìm cực trị.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=9cm]{images/find-maxima.jpg}
+	\caption{Minh họa cho bước tìm cực trị}
+\end{figure}
+Dựa theo bài báo của D.Lowe. Ta sẽ có các giá trị tối ưu gồm số Octaves = 4, Scale Levels = 5, giá trị $\sigma$ khởi tạo = 1.6, giá trị k=$\sqrt{2}$
+
+Sau khi ta đã có được một tập hợp các điểm đặc trưng thì ta sẽ chuyển sang bước tiếp theo, định vị chính xác điểm đặc trưng \textbf{(Accurate keypoint localization)}. Đây là một bước quan trọng trong quy trình phát hiện đặc trưng (keypoint detection) của phương pháp SIFT. Bước này nhằm đảm bảo rằng các điểm đặc trưng được phát hiện không chỉ là cực trị trong không gian DoG (Difference of Gaussian) mà còn phải có vị trí chính xác và ổn định. Lowe đã đề xuất một quy trình tinh chỉnh như sau:\\
+
+\textbf{Bước 1: Tinh chỉnh vị trí điểm đặc trưng (Keypoints Localization)}. Bước đầu tiên trong quá trình tinh chỉnh điểm đặc trưng là sử dụng phương trình Taylor mở rộng để tìm vị trí chính xác của điểm đặc trưng. Một điểm cực trị được phát hiện trong không gian DoG (Difference of Gaussian) có thể có độ chính xác thấp, đặc biệt là trong trường hợp có nhiễu hoặc các cực trị gần nhau. Để giải quyết vấn đề này, Lowe sử dụng phương pháp phân tích Taylor để ước tính vị trí chính xác của điểm cực trị trong không gian 3D (vị trí trong không gian x, y và mức tỉ lệ $\sigma$). Phương trình Taylor được sử dụng để mô phỏng các thay đổi cục bộ quanh điểm cực trị và dự đoán vị trí chính xác hơn của điểm đặc trưng:
+\[ f(x,y,\sigma)=ax^{2}+by^{2}+c\sigma^{2}+2dxy+2ex\sigma+2fy\sigma \]
+Các tham số \textit{a,b,c,d,e,f} được tính toán từ các giá trị của hàm DoG tại các điểm gần đó. Phương trình này giúp xác định sự thay đổi của giá trị cực trị trong không gian 3D và tìm ra vị trí chính xác của điểm đặc trưng.\\
+
+\textbf{Bước 2: Loại bỏ điểm có độ sáng thấp (Low-contrast keypoints)}. Sau khi tinh chỉnh vị trí của các điểm đặc trưng, các điểm có độ sáng thấp (contrast) sẽ bị loại bỏ. Các điểm này thường không ổn định và có thể gây nhầm lẫn trong các bước khớp đặc trưng về sau. Lowe chỉ ra rằng nếu độ sáng của điểm cực trị sau khi tinh chỉnh nhỏ hơn một ngưỡng nhất định (thường là 0.03 như trong bài báo), điểm này sẽ bị loại bỏ.\\
+
+\textbf{Bước 3: Loại bỏ các điểm đặc trưng nằm trên các cạnh (Edge keypoints)}
+Cạnh (Edges) trong ảnh có phản hồi mạnh hơn so với các điểm đặc trưng, vì vậy các điểm đặc trưng nằm trên các cạnh cũng cần được loại bỏ. Lowe sử dụng một phương pháp tương tự như trong \textbf{Harris corner detector}, trong đó một ma trận Hessian \( H \) được sử dụng để tính toán \textbf{độ cong chính (principal curvature)} tại mỗi điểm cực trị.
+
+\begin{itemize}
+	\item Ma trận Hessian \( H \) có thể được sử dụng để tính toán hai trị riêng (eigenvalues), đại diện cho độ cong chính tại điểm cực trị.
+	\item Nếu tỷ lệ giữa hai trị riêng này lớn hơn một ngưỡng nhất định (ví dụ như 10 trong bài báo của Lowe), điểm đó sẽ được loại bỏ vì nó nằm trên một cạnh thay vì một điểm đặc trưng mạnh.
+\end{itemize}
+
+Kết quả cuối cùng là các điểm đặc trưng mạnh mẽ, ổn định và chính xác, sẵn sàng cho các bước mô tả và khớp đặc trưng trong các ứng dụng như nhận dạng đối tượng, ghép ảnh hoặc theo dõi chuyển động.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=12cm]{images/keypoint_localization.jpg}
+	\caption{Hình minh họa trước và sau khi tinh chỉnh điểm đặc trưng. Nguồn: geeksforgeeks.org\cite{gfg}}
+\end{figure}
+\subsubsection{Mô tả điểm đặc trưng (Keypoint Descriptor)}
+Phần mô tả điểm đặc trưng là một bước quan trọng để tạo ra các đặc trưng mạnh mẽ có thể khớp chính xác giữa các hình ảnh, ngay cả khi có sự thay đổi về tỉ lệ, xoay hay điều kiện ánh sáng. Để mô tả các điểm đặc trưng, Lowe áp dụng một số bước cơ bản sau: chuẩn hóa hướng, chia vùng lân cận thành các phần con, tính toán gradient và xây dựng histogram.
+\begin{itemize}
+	\item \textbf{Thuật toán sử dụng}: Nhóm nghiên cứu sẽ tiếp tục sử dụng thuật toán SIFT để minh họa cho bước này vì SIFT bao gồm cả phát hiện đặc trưng cũng như miêu tả đặc trưng.
+\end{itemize}
+
+\textbf{Bước 1: Chuẩn hóa hướng (Orientation Normalization)}. Một vấn đề quan trọng khi mô tả các điểm đặc trưng là sự bất biến đối với xoay của ảnh. Lowe giải quyết vấn đề này bằng cách chuẩn hóa hướng của mỗi điểm đặc trưng. Để tính toán hướng của điểm đặc trưng, đầu tiên, Lowe tính toán gradient của hình ảnh tại mỗi điểm đặc trưng trong một vùng lân cận của nó.\\
+\[ \textbf{Gradient magnitude: } \| \nabla I(x, y) \| = \sqrt{\left( \frac{\partial I}{\partial x} \right)^2 + \left( \frac{\partial I}{\partial y} \right)^2} \]
+\\
+\[ \textbf{Gradient orientation: } \theta(x, y) = \text{atan2} \left( \frac{\partial I}{\partial y}, \frac{\partial I}{\partial x} \right) \]
+\\
+\text{Ở đây:}
+\begin{itemize}
+	\item \( \frac{\partial I}{\partial x} \) và \( \frac{\partial I}{\partial y} \) là đạo hàm của ảnh theo hai hướng \(x\) và \(y\).
+	\item Hàm \( \text{atan2}(y, x) \) trả về góc của vector \((x, y)\).
+\end{itemize}
+
+\textbf{Bước 2: Xây dựng mô tả đặc trưng (Descriptor Construction)}. Sau khi tính toán gradient, Lowe xác định hướng chính của điểm đặc trưng bằng cách tính toán histogram của các hướng gradient trong một vùng tròn xung quanh điểm đặc trưng. Hướng chính được chọn là giá trị có tần suất xuất hiện cao nhất trong histogram này.\\
+
+Để mô tả các điểm đặc trưng, Lowe chia vùng lân cận của mỗi điểm đặc trưng thành các phần nhỏ hơn (sub-regions). Sau đó, tính toán histogram của \textbf{gradient magnitude} và \textbf{gradient orientation} cho mỗi vùng con.
+
+\begin{enumerate}
+	\item \textbf{Chia vùng lân cận:} Lowe chia vùng lân cận của mỗi điểm đặc trưng thành một lưới các ô vuông nhỏ (ví dụ: \(4 \times 4\)). Mỗi ô nhỏ này sẽ có một histogram gradient riêng.
+	
+	\item \textbf{Tính toán histogram trong mỗi ô:} Trong mỗi ô nhỏ, Lowe tính toán gradient magnitude và gradient orientation. Sau đó, các hướng gradient được phân loại thành các \textbf{bin} (khoảng giá trị) của histogram. Số lượng bin trong histogram thường là 8, và mỗi bin đại diện cho một phạm vi hướng (ví dụ: \(0^\circ - 45^\circ\), \(45^\circ - 90^\circ\), ...).
+	
+	\item \textbf{Mô tả cho một điểm đặc trưng:} Mô tả cho một điểm đặc trưng sẽ là một vector được tạo thành từ các giá trị trong tất cả các histogram của các ô nhỏ. Ví dụ, với một lưới \(4 \times 4\) và mỗi histogram có 8 bin, tổng số phần tử trong mô tả sẽ là \(4 \times 4 \times 8 = 128\) giá trị. Mỗi giá trị trong mô tả này biểu diễn sự phân bố gradient trong một phần nhỏ của vùng lân cận của điểm đặc trưng.
+\end{enumerate}
+
+\textbf{Descriptor vector: } \( D = [d_1, d_2, \dots, d_{128}] \)
+
+Trong đó, \( d_i \) là các giá trị từ histogram gradient của mỗi ô trong vùng lân cận. Hình bên dưới minh họa cho quá trình tạo histogram từ các hướng của từng điểm:
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=12cm]{images/histogram.jpg}
+	\caption{Một bộ mô tả 2x2 được tạo ra từ tập hợp 8x8 điểm mẫu}
+\end{figure}
+
+
+\textbf{Bước 3: Chuẩn hóa mô tả đặc trưng (Descriptor Normalization)}. Để đảm bảo tính bất biến của mô tả đối với các thay đổi về độ sáng, Lowe thực hiện một bước chuẩn hóa cho vector mô tả. Mỗi vector mô tả được chuẩn hóa bằng cách làm cho tổng bình phương các giá trị trong vector bằng 1, và sau đó clip các giá trị trong vector nếu chúng vượt quá một ngưỡng nhất định.
+
+\begin{itemize}
+	\item \textbf{Chuẩn hóa L2:} Mỗi vector mô tả được chuẩn hóa để có chuẩn L2 bằng 1.
+	\[
+	\| D \|_2 = \sqrt{\sum_{i=1}^{128} d_i^2} \quad \Rightarrow \quad D_{normalized} = \frac{D}{\| D \|_2}
+	\]
+	
+	\item \textbf{Clipping (Cắt giá trị):} Sau khi chuẩn hóa, Lowe cắt các giá trị trong vector mô tả nếu chúng vượt quá một ngưỡng nhất định, thường là 0.2. Điều này giúp giảm tác động của các điểm đặc trưng quá mạnh.
+	\[
+	D_{clipped} = \text{clip}(D_{normalized}, 0, 0.2)
+	\]
+\end{itemize}
+
+Cuối cùng, vector mô tả được chuẩn hóa và cắt này được sử dụng để khớp điểm đặc trưng giữa các hình ảnh khác nhau, giúp xác định các sự kiện tương đồng trong những bức ảnh có điều kiện biến đổi khác nhau (xoay, tỉ lệ, ánh sáng). Hình bên dưới mô tả ảnh sau khi tìm được các điểm đặc trưng cùng với hướng của chúng.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=11cm]{images/interest_points.jpg}
+	\caption{Trước và sau khi tìm được các điểm đặc trưng. Nguồn: geeksforgeeks.org\cite{gfg}}
+\end{figure}
+\subsubsection{Khớp đặc trưng (Feature Matching)}
+Bước khớp đặc trưng là một bước quan trọng trong việc tìm kiếm các điểm tương đồng giữa hai hình ảnh. Sau khi các điểm đặc trưng đã được phát hiện và mô tả, bước tiếp theo là tìm kiếm các cặp điểm tương ứng giữa các hình ảnh. Mục tiêu là khớp các đặc trưng giống nhau từ hai hình ảnh khác nhau, ngay cả khi có sự thay đổi về tỉ lệ, góc nhìn, hoặc điều kiện ánh sáng.\\
+
+\textbf{Quy trình chung:}
+\begin{enumerate}
+	\item \textbf{Lấy mô tả điểm đặc trưng} từ cả hai hình ảnh cần khớp.
+	\item \textbf{Tính khoảng cách} giữa các vector mô tả của các điểm đặc trưng từ hai hình ảnh.
+	\item \textbf{So sánh các điểm đặc trưng} để tìm ra cặp điểm có khoảng cách nhỏ nhất, tức là các điểm tương ứng.
+\end{enumerate}
+
+\subsection*{Các phương pháp sử dụng trong khớp đặc trưng}
+
+\subsubsection*{1. Brute-Force Matcher với khoảng cách Euclidean}
+
+Phương pháp \textbf{Brute-Force Matcher} là một cách đơn giản nhưng mạnh mẽ để tìm kiếm các cặp điểm tương đồng. Phương pháp này tính khoảng cách giữa tất cả các điểm đặc trưng từ hai hình ảnh và chọn ra cặp điểm có khoảng cách nhỏ nhất.\\
+
+\textbf{Cách thức hoạt động:}
+\begin{itemize}
+	\item \textbf{Tính khoảng cách Euclidean} giữa hai vector mô tả điểm đặc trưng \(D_1\) và \(D_2\) từ hai hình ảnh khác nhau. Khoảng cách Euclidean được tính theo công thức:
+	\[
+	\text{Euclidean Distance} = \| D_1 - D_2 \|_2 = \sqrt{\sum_{i=1}^{n} (d_{1i} - d_{2i})^2}
+	\]
+	Trong đó:
+	\begin{itemize}
+		\item \(d_{1i}\) và \(d_{2i}\) là các thành phần của vector mô tả \(D_1\) và \(D_2\).
+		\item \(n\) là số lượng phần tử trong vector.
+	\end{itemize}
+	
+	\item \textbf{Lựa chọn cặp điểm}: Sau khi tính toán khoảng cách giữa tất cả các điểm đặc trưng của hai hình ảnh, thuật toán chọn các cặp điểm có khoảng cách nhỏ nhất, giả định rằng chúng là những điểm tương ứng.
+\end{itemize}
+
+\textbf{Độ phức tạp của Brute-Force Matcher:} Thuật toán có độ phức tạp \(O(m \cdot n \cdot d)\), với \(m\) và \(n\) là số lượng điểm đặc trưng trong hai hình ảnh, và \(d\) là số chiều của vector đặc trưng.\\
+
+\textbf{Ưu điểm:}
+\begin{itemize}
+	\item Đơn giản, dễ triển khai.
+	\item Chất lượng khớp tốt khi số lượng điểm đặc trưng không quá lớn.
+\end{itemize}
+
+\textbf{Nhược điểm:}
+\begin{itemize}
+	\item Không hiệu quả khi số lượng điểm đặc trưng lớn, vì phải tính toán khoảng cách giữa mọi cặp điểm (tốn thời gian tính toán).
+\end{itemize}
+
+\subsubsection*{2. FLANN (Fast Library for Approximate Nearest Neighbors)}
+
+Khi số lượng điểm đặc trưng quá lớn, phương pháp Brute-Force trở nên không hiệu quả vì chi phí tính toán rất cao. Để giải quyết vấn đề này, phương pháp \textbf{FLANN (Fast Library for Approximate Nearest Neighbors)} được sử dụng để tăng tốc quá trình khớp đặc trưng.\\
+
+\textbf{Cách thức hoạt động:}
+\begin{itemize}
+	\item FLANN sử dụng các cấu trúc dữ liệu tối ưu, như \textbf{cây k-d tree} hoặc \textbf{cây LSH (Locality Sensitive Hashing)}, để tìm kiếm gần đúng các điểm tương ứng nhanh chóng mà không cần tính toán khoảng cách cho tất cả các cặp điểm.
+	\item FLANN tìm kiếm trong không gian đặc trưng theo cách gần đúng, giảm thiểu số lượng phép toán cần thực hiện so với Brute-Force Matcher.
+\end{itemize}
+
+\textbf{Độ phức tạp của FLANN:} FLANN sử dụng các cấu trúc dữ liệu như \textit{k-d tree} hoặc \textit{LSH}, với độ phức tạp trung bình là \(O(\log(n) \cdot d)\) hoặc \(O(k \cdot d)\), giúp tăng tốc đáng kể so với Brute-Force.\\
+
+\textbf{Ưu điểm:}
+\begin{itemize}
+	\item Rất nhanh, đặc biệt đối với các bộ dữ liệu lớn.
+	\item Tiết kiệm tài nguyên tính toán nhờ việc sử dụng phương pháp tìm kiếm gần đúng.
+\end{itemize}
+
+\textbf{Nhược điểm:}
+\begin{itemize}
+	\item Đôi khi có thể không chính xác hoàn toàn do tìm kiếm gần đúng.
+	\item Cần cấu hình phù hợp để đạt được hiệu suất tốt nhất.
+\end{itemize}
+
+\subsubsection*{Kết luận}
+\begin{itemize}
+	\item \textbf{Brute-Force Matcher} tốt cho các bộ dữ liệu nhỏ, nếu như độ chính xác là quan trọng hơn tốc độ.
+	\item \textbf{FLANN} thích hợp cho các bộ dữ liệu lớn hoặc khi thời gian tính toán là yếu tố quan trọng, trong một số trường hợp độ chính xác có thể không cao như Brute-Force Matcher.
+\end{itemize}
+
+\subsubsection{Lọc các khớp không chính xác (Outlier Filtering)}
+
+Trong bước lọc các khớp không chính xác, mục tiêu chính là loại bỏ các cặp đặc trưng sai lệch để tăng độ chính xác của mô hình và giảm ảnh hưởng của nhiễu. Quá trình này thường được thực hiện sau khi đã khớp các đặc trưng giữa hai hình ảnh và có thể sử dụng các kỹ thuật sau:
+
+\subsubsubsection*{1. Sử dụng RANSAC (Random Sample Consensus):}
+RANSAC là một thuật toán mạnh mẽ để loại bỏ các khớp không chính xác bằng cách tìm kiếm mô hình phù hợp nhất với các cặp điểm khớp. Trong ngữ cảnh này, nó được sử dụng để xác định một phép biến đổi hình học (ví dụ: ma trận đồng nhất hoặc ma trận homography) liên kết hai hình ảnh.
+
+\textbf{Quy trình của RANSAC:}
+\begin{enumerate}
+	\item \textit{Chọn mẫu ngẫu nhiên:} Lấy ngẫu nhiên một tập hợp con nhỏ từ các cặp điểm khớp. Số lượng điểm cần chọn phụ thuộc vào loại mô hình được ước lượng (ví dụ: 4 điểm cho homography).
+	\item \textit{Ước lượng mô hình:} Sử dụng tập hợp con đã chọn để ước lượng một mô hình hình học, ví dụ:
+	\[
+	H = 
+	\begin{bmatrix}
+		h_{11} & h_{12} & h_{13} \\
+		h_{21} & h_{22} & h_{23} \\
+		h_{31} & h_{32} & h_{33}
+	\end{bmatrix}
+	\]
+	Đây là ma trận homography, xác định phép biến đổi giữa hai hình ảnh.
+	\item \textit{Đánh giá độ phù hợp (inliers):} Tính khoảng cách giữa các điểm khớp khác với mô hình đã ước lượng. Điểm được coi là inlier nếu khoảng cách nhỏ hơn một ngưỡng:
+	\[
+	\text{Error} = \| p' - H \cdot p \|_2
+	\]
+	Trong đó \(p\) và \(p'\) là các tọa độ của các điểm tương ứng và \(H\) là mô hình được ước lượng.
+	\item \textit{Lặp lại:} Thực hiện nhiều lần để tìm mô hình có số lượng inliers lớn nhất.
+	\item \textit{Ước lượng cuối cùng:} Sử dụng tất cả các inliers để ước lượng mô hình tốt nhất.
+\end{enumerate}
+
+\textbf{Ưu điểm của RANSAC:}
+\begin{itemize}
+	\item Loại bỏ hiệu quả các outliers (khớp sai).
+	\item Đảm bảo mô hình phù hợp với phần lớn dữ liệu.
+\end{itemize}
+
+\textbf{Nhược điểm của RANSAC:}
+\begin{itemize}
+	\item Hiệu quả phụ thuộc vào số lượng outliers và ngưỡng được chọn.
+	\item Có thể tốn thời gian với bộ dữ liệu lớn.
+\end{itemize}
+
+\textbf{Trích dẫn:} Trong bài báo \textit{Distinctive Image Features from Scale-Invariant Keypoints} của David G. Lowe\cite{D.Lowe}, RANSAC được nhắc đến như một công cụ hiệu quả để xác định phép biến đổi hình học giữa các hình ảnh dựa trên các điểm đặc trưng khớp.
+
+\subsubsubsection*{2. Lọc bằng khoảng cách tỷ lệ (Ratio Test):}
+Phương pháp này được đề xuất trong bài báo của Lowe để loại bỏ các khớp không chính xác dựa trên tỷ lệ giữa khoảng cách của cặp điểm gần nhất và cặp điểm gần thứ hai.\\
+
+\textbf{Nguyên tắc hoạt động:}
+\begin{itemize}
+	\item Tính tỷ lệ giữa khoảng cách của điểm gần nhất (\(d_1\)) và điểm gần thứ hai (\(d_2\)):
+	\[
+	\text{Ratio} = \frac{d_1}{d_2}
+	\]
+	\item Nếu tỷ lệ này nhỏ hơn một ngưỡng (thường là 0.8 theo Lowe), thì cặp điểm đó được chấp nhận.
+\end{itemize}
+
+\textbf{Ưu điểm:}
+\begin{itemize}
+	\item Đơn giản và hiệu quả.
+	\item Loại bỏ nhiều khớp sai trước khi sử dụng các phương pháp phức tạp hơn.
+\end{itemize}
+
+\textbf{Nhược điểm:}
+\begin{itemize}
+	\item Có thể loại bỏ nhầm các khớp đúng trong một số trường hợp phức tạp.
+\end{itemize}
+
+
+\subsubsubsection*{Kết luận}
+\begin{itemize}
+	\item \textbf{RANSAC:} Là một phương pháp mạnh mẽ để xử lý các outliers và xây dựng mô hình chính xác. Tuy nhiên, phương pháp này có nhược điểm là tốn thời gian, đặc biệt với bộ dữ liệu lớn.
+	\item \textbf{Ratio Test:} Nhanh và đơn giản, phù hợp để lọc sơ bộ các cặp đặc trưng. Dù vậy, nó có thể loại bỏ nhầm các cặp khớp đúng trong một số trường hợp phức tạp.
+	\item Hai phương pháp này thường được sử dụng cùng nhau để đạt hiệu quả tốt nhất. Ratio Test được dùng để lọc sơ bộ, trong khi RANSAC được áp dụng để xử lý các outliers còn lại và xây dựng mô hình chính xác.
+\end{itemize}
+\subsection{Triển khai thuật toán và kiểm thử}
+\subsubsection{Công cụ và thư viện sử dụng}
+Các công cụ và thư viện sau đây được sử dụng để triển khai các thuật toán trong bài tiểu luận. Các công cụ này giúp tối ưu hóa quá trình phát triển, thử nghiệm và đánh giá các thuật toán khớp đặc trưng giữa hai hình ảnh.\\
+
+\textbf{Các công cụ phần mềm chính:}
+
+\begin{itemize}
+	\item \textbf{Python}: Ngôn ngữ lập trình chính được sử dụng trong nghiên cứu này, với các thư viện mạnh mẽ hỗ trợ xử lý ảnh và tính toán khoa học. Python được chọn vì tính linh hoạt và phổ biến trong cộng đồng nghiên cứu.
+	\item \textbf{OpenCV}: Thư viện mã nguồn mở cung cấp các công cụ mạnh mẽ để xử lý ảnh và video, đặc biệt là các thuật toán phát hiện đặc trưng và khớp đặc trưng như SIFT, SURF, ORB, và các thuật toán khớp đặc trưng. OpenCV là lựa chọn hàng đầu vì hiệu suất cao và dễ sử dụng.
+	\item \textbf{NumPy}: Thư viện được sử dụng để thao tác với mảng, ma trận, và các phép toán số học trong quá trình xử lý dữ liệu và tính toán. NumPy được chọn vì khả năng xử lý dữ liệu nhanh chóng và hiệu quả.
+	\item \textbf{Matplotlib}: Dùng để vẽ đồ thị và trực quan hóa kết quả và các điểm đặc trưng trên ảnh. Matplotlib giúp trình bày kết quả một cách rõ ràng và dễ hiểu.
+\end{itemize}
+
+\textbf{Hình ảnh được sử dụng}\\
+
+Nhóm nghiên cứu sẽ thử nghiệm với 2 bức ảnh tự chụp, một ảnh chứa vật thể cần phát hiện đặc trưng và một ảnh có vật thể ở tỉ lệ, góc xoay khác kèm nhiễu để đánh giá khả năng phát hiện và khớp đặc trưng của các thuật toán trong điều kiện thay đổi góc nhìn và nhiễu.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=7cm]{images/original_pairs.png}
+	\caption{Ảnh chỉ chứa vật thể (trái) và ảnh cần khớp đặc trưng (phải)}
+\end{figure}
+
+\textbf{Môi trường phát triển}
+\begin{itemize}
+	\item \textbf{IDE}: Nhóm sử dụng \textbf{VSCode} làm môi trường phát triển chính, với sự hỗ trợ của các plugin cho Python và OpenCV.
+	\item \textbf{Hệ điều hành}: Các thử nghiệm được thực hiện trên \textbf{Windows 10}, sử dụng \textbf{Python 3.11}.
+	\item \textbf{Cấu hình phần cứng}
+	\begin{itemize}
+		\item \textbf{CPU}: Ryzen 5 5600
+		\item \textbf{RAM}: 16GB
+		\item \textbf{Card đồ họa}: RTX 3060 Ti
+	\end{itemize}
+\end{itemize}
+
+\subsubsection{Triển khai các thuật toán}
+Phần này mô tả các bước triển khai mã nguồn để thực hiện khớp đặc trưng giữa hai hình ảnh. Sau khi đã thiết lập môi trường phát triển và cài đặt các thư viện cần thiết, nhóm sẽ sử dụng các công cụ và thư viện như OpenCV và numpy để phát hiện và khớp các đặc trưng giữa hai ảnh. Mã nguồn sẽ bao gồm các bước phát hiện đặc trưng, kết nối các điểm tương đồng giữa các ảnh, và lọc kết quả không chính xác.
+\subsubsection*{1. Phát hiện và mô tả các đặc trưng của một ảnh}
+Import các thư viện sử dụng:
+\begin{lstlisting}[language=Python]
+import cv2 as cv
+import numpy as np
+\end{lstlisting}
+
+\textbf{Đọc ảnh và giảm kích thước ảnh:}
+\begin{itemize}
+	\item \texttt{cv.IMREAD\_COLOR} và \texttt{cv.IMREAD\_GRAYSCALE}: Đọc ảnh theo chế độ màu dùng để so sánh và ảnh xám dùng cho xử lí
+	\item \texttt{cv.resize}: giảm kích thước ảnh xuống 40\%, bước này không cần thiết, áp dụng cho ảnh của nhóm để dễ nhìn hơn
+\end{itemize}
+
+\begin{lstlisting}[language=Python]
+	img_color = cv.imread(img_path, cv.IMREAD_COLOR)
+	img = cv.imread(img_path, cv.IMREAD_GRAYSCALE)
+	# Downscale the image to 40%
+	scale_x = 0.4
+	scale_y = 0.4
+	img = cv.resize(img, None, fx=scale_x, fy=scale_y)
+	img_color = cv.resize(img_color, None, fx=scale_x, fy=scale_y)
+\end{lstlisting}
+
+
+\textbf{Áp dụng thuật toán SIFT để phát hiện các keypoint trong ảnh:}
+\begin{itemize}
+	\item \texttt{cv.SIFT\_create}: Tạo đối tượng SIFT (Scale-Invariant Feature Transform).
+	\item \texttt{sift.detect}: Phát hiện các keypoint trong ảnh.
+	\item \texttt{cv.drawKeypoints}: Vẽ các keypoint lên ảnh đầu vào.
+\end{itemize}
+
+\begin{lstlisting}[language=Python]
+	sift = cv.SIFT_create()
+	keypoints = sift.detect(img, None)
+	image_with_keypoints = cv.drawKeypoints(
+	img, keypoints, None, flags=cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS
+	)
+\end{lstlisting}
+
+
+\textbf{Kết hợp ảnh gốc và ảnh có keypoint để hiển thị}
+
+\begin{itemize}
+	\item \texttt{np.concatenate}: Kết hợp hai mảng (ảnh) theo chiều ngang (\texttt{axis=1}).
+	\item \texttt{cv.imshow}: Hiển thị ảnh trong một cửa sổ.
+	\item \texttt{cv.waitKey(0)}: Chờ phím bấm từ người dùng để đóng cửa sổ hiển thị.
+\end{itemize}
+
+\begin{lstlisting}
+	combined_image = np.concatenate((img_color, image_with_keypoints), axis=1)
+	cv.imshow('Original and SIFT Keypoints', combined_image)
+	cv.waitKey(0)
+	cv.destroyAllWindows()
+\end{lstlisting}
+
+\textbf{Kết quả thử nghiệm:}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=7cm]{images/output.png}
+	\caption{Ảnh gốc (trái) và ảnh sau khi phát hiện điểm đặc trưng (phải)}
+\end{figure}
+
+\textbf{Nhận xét:}
+
+\begin{itemize}
+	\item Các điểm đặc trưng đã được phát hiện cho thấy rằng SIFT có thể phát hiện các điểm nổi bật trên các vùng khác nhau, đặc biệt là các cạnh và góc.
+	
+	\item Phần lớn các điểm đặc trưng tập trung ở những vùng có nhiều chi tiết, như phần chữ và logo. Bề mặt ít chi tiết hơn (như phần nền gỗ) có rất ít hoặc không có điểm đặc trưng được phát hiện, cho thấy điều này phù hợp với bản chất của thuật toán SIFT.
+	
+	\item Hình ảnh cho thấy SIFT đã phát hiện tốt các đặc trưng quan trọng (chữ viết, biểu tượng), mặc dù một số điểm đặc trưng trên các vùng trống (như bề mặt giấy) có thể không cần thiết.
+	
+	\item Với hình ảnh như thế này, SIFT có thể được sử dụng để so sánh và nhận dạng bìa sách từ nhiều góc độ khác nhau.
+\end{itemize}
+
+
+\subsubsection*{2. Khớp đặc trưng của ảnh với một ảnh khác có chứa cùng vật thể}
+
+Nhóm sẽ tiếp tục triển khai mã nguồn để khớp các đặc trưng giữa 2 ảnh sử dụng 2 phương pháp đã giới thiệu: Brute-Force Matcher và FLANN-Based Matcher.
+
+\subsubsection*{a. Brute-Force Matcher}
+
+\textbf{Áp dụng thuật toán khớp dựa trên mô tả của ảnh 1 và ảnh 2}
+
+\begin{lstlisting}[language=Python]
+	bf = cv.BFMatcher(cv.NORM_L2, crossCheck=True)
+	matches_bf = bf.match(descriptors1, descriptors2)
+	matches_bf = sorted(matches_bf, key=lambda x: x.distance)
+\end{lstlisting}
+
+\begin{itemize}
+	\item \texttt{cv.BFMatcher}: Tạo một đối tượng matcher kiểu Brute-Force.
+	\item \texttt{cv.NORM\_L2}: Sử dụng khoảng cách L2 (Euclidean Distance) để so sánh các đặc trưng.
+	\item \texttt{crossCheck=True}: Áp dụng điều kiện "cross-checking" để giữ lại các cặp khớp mà cả hai điểm đều khớp với nhau.
+	\item \texttt{bf.match}: Tiến hành so khớp giữa hai bộ đặc trưng \texttt{descriptors1} và \texttt{descriptors2}.
+	\item \texttt{sorted}: Sắp xếp các kết quả khớp theo khoảng cách.
+\end{itemize}
+\textbf{Vẽ các cặp điểm khớp và hiển thị hình ảnh}
+
+\begin{lstlisting}[language=Python]
+	bf_matched_img = cv.drawMatches(img1, keypoints1, img2, keypoints2, matches_bf[:50], None, flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+	cv.imshow("Brute-Force Matching", bf_matched_img)
+\end{lstlisting}
+
+\begin{itemize}
+	\item \texttt{cv.drawMatches}: Vẽ các cặp điểm khớp lên hình ảnh.
+	\item \texttt{flags=cv.DrawMatchesFlags\_NOT\_DRAW\_SINGLE\_POINTS}: không vẽ các điểm đặc trưng đơn lẻ.
+	\item \texttt{cv.imshow}: Hiển thị hình ảnh có các cặp điểm khớp.
+\end{itemize}
+\textbf{Kết quả}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=7cm]{images/output1.png}
+	\caption{Khớp các đặc trưng giữa hai ảnh dùng Brute-force Matcher}
+\end{figure}
+
+\subsubsection*{b. FLANN-Based Matcher}
+
+\textbf{Áp dụng thuật toán khớp dựa trên mô tả của ảnh 1 và ảnh 2}
+
+\begin{lstlisting}[language=Python]
+	index_params = dict(algorithm=1, trees=5)
+	search_params = dict(checks=50)
+	flann = cv.FlannBasedMatcher(index_params, search_params)
+	matches_flann = flann.knnMatch(descriptors1, descriptors2, k=2)
+\end{lstlisting}
+
+\begin{itemize}
+	\item \texttt{cv.FlannBasedMatcher}: Tạo đối tượng FLANN-based matcher sử dụng cây K-D.
+	\item \texttt{flann.knnMatch}: Tìm các cặp khớp gần nhất bằng phương pháp k-NN.
+    \item \texttt{algorithm=1}: Sử dụng KD-Tree để tìm kiếm điểm gần nhất trong không gian đa chiều.
+	\item \texttt{trees=5}: Xác định số lượng cây KD-Tree trong mô hình.
+	\item \texttt{checks=50}: Số lần kiểm tra điểm kế nhau. Tăng giá trị này sẽ cải thiện độ chính xác nhưng đồng thời làm tăng thời gian tính toán.
+	\item \texttt{knnMatch()}: Hàm này tìm ra hai điểm gần nhất (\texttt{k=2}) cho mỗi descriptor từ ảnh thứ nhất trong tập descriptor của ảnh thứ hai, hỗ trợ cho việc áp dụng Lowe's Ratio Test ở bước sau để lọc các kết quả không chính xác.
+\end{itemize}
+\textbf{Vẽ các cặp điểm khớp và hiển thị hình ảnh}
+
+\begin{lstlisting}[language=Python]
+    all_matches_img = cv.drawMatchesKnn(img1, keypoints1, img2, keypoints2, matches_flann[:50], None, flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+    
+	cv.imshow("FLANN-Based Matching (All Matches)", all_matches_img)
+\end{lstlisting}
+
+\begin{itemize}
+	\item \texttt{cv.drawMatchesKnn}: vẽ các khớp từ \texttt{knnMatch}.
+	\item \texttt{matches\_flann[:50]}: lấy 50 khớp đầu tiên.
+	\item \texttt{flags=cv.DrawMatchesFlags\_NOT\_DRAW\_SINGLE\_POINTS}: không vẽ các điểm đặc trưng đơn lẻ.
+	
+	\item \texttt{cv.imshow}: Hiển thị hình ảnh có các cặp điểm khớp.
+\end{itemize}
+
+\textbf{Kết quả}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=7cm]{images/output2.png}
+	\caption{Khớp các đặc trưng giữa hai ảnh dùng FLANN}
+\end{figure}
+
+
+\subsubsection*{c. Nhận xét và so sánh 2 phương pháp}
+\textbf{Brute-force Matcher}
+\begin{itemize}
+	\item Thuật toán cho ra kết quả khớp tốt ở các kí tự chữ cái, các phần góc cạnh, tuy nhiên một số chữ cái giống nhau ở vị trí khác nhau gây ra sự hiểu nhầm cho thuật toán.
+	\item Nhìn tổng thể kết quả khớp khá tốt, chỉ có một số sai sót nhỏ ở đoạn khớp phần viền cuốn sách và viền của các quyển vở xung quanh.
+	\item Kết quả đã khẳng định thuật toán Brute-force thực hiện tốt và chính xác với tập dữ liệu nhỏ như giữa hai hình ảnh.
+\end{itemize}
+\textbf{FLANN-Based Matcher}
+\begin{itemize}
+	\item Một số khớp tương đối chính xác, đặc biệt ở những vùng có nhiều chi tiết như chữ trên bìa sách. Những đường nối chính xác thường có độ dài khá ngắn và hướng phù hợp.
+	\item Tuy nhiên, cũng có rất nhiều khớp sai (outliers), đặc biệt ở các khu vực không liên quan, chẳng hạn các đường nối dài giữa các vùng không đồng nhất hoặc không liên quan trên hai ảnh.
+	\item Sự xuất hiện các outliers có thể do đặc trưng ở một số vùng không đủ rõ ràng, hoặc do ảnh bị thay đổi góc nhìn, ánh sáng hoặc có các yếu tố gây nhiễu, một phần do thuật toán không đạt được độ chính xác cao như thuật toán Brute-force.
+	\item Nếu không áp dụng Lowe's ratio test hay RANSAC, kết quả sẽ bao gồm cả các khớp sai, như đã thấy trong ảnh trên.
+\end{itemize}
+
+Việc triển khai thuật toán cho ta thấy rõ ưu và nhược điểm của các phương pháp khớp đặc trưng, việc sử dụng phương pháp nào tùy thuộc vào yêu cầu cụ thể của bài toán. Brute-Force Matcher đảm bảo tính chính xác cao nhưng chậm hơn khi xử lý tập dữ liệu lớn, trong khi FLANN-Based Matcher tối ưu tốc độ nhưng có thể xuất hiện nhiều khớp sai hơn nếu không áp dụng các phương pháp lọc như Lowe's ratio test. Hiệu quả của từng phương pháp cũng phụ thuộc vào chất lượng đặc trưng được phát hiện và tính tương đồng giữa hai ảnh.
+
+\subsubsection*{3. Lọc những kết quả khớp không chính xác}
+
+Sau khi tìm kiếm các điểm đặc trưng phù hợp, cần có bước lọc các kết quả không chính xác để đảm bảo chất lượng khớp, bước này rất quan trọng vì không những tăng độ chính xác mà còn cải tiến các thuật toán nhanh nhưng có độ chính xác không cao như FLANN, mang lại tính ứng dụng thực tế cao hơn. Nhóm sẽ áp dụng thuật toán FLANN kết hợp với hai kỹ thuật phổ biến đã nói ở phần trên là Lowe's Ratio Test và RANSAC. \\
+\textbf{Triển khai Lowe's Ratio Test}
+\begin{lstlisting}[language=Python]
+	good_matches = []
+	for m, n in matches:
+		if m.distance < 0.7 * n.distance:
+		good_matches.append(m)
+\end{lstlisting}
+
+Lowe's Ratio Test được áp dụng để lọc các khớp không chính xác dựa trên khoảng cách descriptor. Trong đó:
+\begin{itemize}
+	\item \texttt{m.distance} là khoảng cách giữa descriptor của điểm khớp đầu tiên.
+	\item \texttt{n.distance} là khoảng cách giữa descriptor của điểm khớp thứ hai.
+\end{itemize}
+Điểm khớp \( m \) chỉ được giữ lại nếu:
+\[
+m.distance < 0.7 \cdot n.distance
+\]
+Ngưỡng \( 0.7 \) (gọi là \textit{ratio threshold}) đảm bảo rằng điểm khớp đầu tiên gần hơn đáng kể so với điểm thứ hai, giảm khả năng chọn nhầm điểm khớp.\\
+\textbf{Triển khai RANSAC để lọc Outliers}
+
+\begin{lstlisting}[language=Python]
+    if len(good_matches) > 4:
+		src_pts = np.float32([keypoints1[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+		dst_pts = np.float32([keypoints2[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+
+		# Use RANSAC to find homography and filter outliers
+		H, mask = cv.findHomography(src_pts, dst_pts, cv.RANSAC, 5.0)
+		matchesMask = mask.ravel().tolist()
+\end{lstlisting}
+
+RANSAC được sử dụng để tìm \textit{homography matrix} \( H \), đồng thời xác định các điểm khớp tốt (inliers) và các điểm khớp kém chính xác (outliers). 
+
+\begin{itemize}
+	\item \textbf{src\_pts, dst\_pts:} Các tọa độ của các điểm khớp tốt trong hai ảnh, được lấy từ danh sách \textit{keypoints}.
+	\item \textbf{cv.findHomography:} Tính toán ma trận homography với phương pháp RANSAC và ngưỡng \( 5.0 \).
+	\item \textbf{matchesMask:} Mặt nạ nhị phân (binary mask), với giá trị \( 1 \) cho inliers và \( 0 \) cho outliers.
+\end{itemize}
+\textbf{Hiển thị kết quả}
+\begin{lstlisting}[language=Python]
+	filtered_matches = [good_matches[i] for i in range(len(matchesMask)) if matchesMask[i]]
+	result_img = cv.drawMatches(img1, keypoints1, img2, keypoints2, filtered_matches, None, flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+    cv.imshow('Filtered Matches', result_img)
+	
+\end{lstlisting}
+
+\begin{itemize}
+	\item Các khớp tốt được trích xuất từ danh sách \textit{good\_matches} bằng cách sử dụng \textit{matchesMask}.
+	\item Hàm \texttt{cv.drawMatches()} vẽ các điểm khớp giữa hai ảnh, với các điểm khớp tốt được kết nối bằng đường thẳng.
+\end{itemize}
+
+\textbf{Kết quả}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=7cm]{images/after_filter.png}
+	\caption{Kết quả sau khi áp dụng cả hai phương pháp Lowe's ratio và RANSAC}
+\end{figure}
+
+\textbf{Nhận xét}
+\begin{itemize}
+	\item Sau khi áp dụng \textit{Lowe's Ratio Test} và \textit{RANSAC}, các điểm được giữ lại chủ yếu tập trung ở các khu vực có nhiều đặc trưng nổi bật, chẳng hạn như các cạnh sắc nét hoặc chi tiết phức tạp trong hình ảnh. Kết quả lọc đã loại bỏ hầu hết các điểm khớp không chính xác, do đó các đường nối trong hình ảnh đại diện cho độ chính xác đáng kinh ngạc.
+	\item Các điểm khớp đúng phân bố khá đều ở vùng các chi tiết trong ảnh gốc (bên trái) và ảnh biến đổi (bên phải). Tuy nhiên, do sự khác biệt về góc chụp và cấu trúc hình ảnh, một số khu vực không có khớp chính xác, trong xử lý ảnh thực tế đây là điều bình thường.
+	\item Ta có thể cải thiện thêm độ chính xác bằng cách tối ưu hóa tham số trong \textit{RANSAC} (như ngưỡng hoặc số lần lặp).
+\end{itemize}
+
+

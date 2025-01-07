@@ -25,6 +25,47 @@
 \usepackage{mathdots}
 \usepackage{titlesec}
 \usepackage{indentfirst}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{xcolor}  % Tùy chọn để thay đổi màu sắc của mã
+
+
+% Định nghĩa màu sắc từ theme Dracula
+\definecolor{dracula-bg}{RGB}{40, 42, 54}         % Màu nền
+\definecolor{dracula-current-line}{RGB}{68, 71, 90} % Màu dòng hiện tại
+\definecolor{dracula-selection}{RGB}{68, 71, 90}    % Màu khi chọn
+\definecolor{dracula-foreground}{RGB}{248, 248, 242} % Màu chữ
+\definecolor{dracula-comment}{RGB}{98, 114, 164}   % Màu comment
+\definecolor{dracula-cyan}{RGB}{139, 233, 253}     % Màu cyan (biến đặc biệt)
+\definecolor{dracula-green}{RGB}{80, 250, 123}     % Màu xanh lá (hàm)
+\definecolor{dracula-orange}{RGB}{255, 184, 108}   % Màu cam (tham số)
+\definecolor{dracula-pink}{RGB}{255, 121, 198}     % Màu hồng (keyword)
+\definecolor{dracula-purple}{RGB}{189, 147, 249}   % Màu tím (biến, class)
+\definecolor{dracula-red}{RGB}{255, 85, 85}        % Màu đỏ (cảnh báo)
+\definecolor{dracula-yellow}{RGB}{241, 250, 140}   % Màu vàng (chuỗi)
+
+% Định nghĩa style cho Python
+\lstset{frame=tb,
+	language=Python,
+	backgroundcolor=\color{dracula-bg},          % Màu nền
+	basicstyle=\ttfamily\footnotesize\color{dracula-foreground}, % Font và màu chữ chính
+	keywordstyle=\color{dracula-pink},           % Từ khóa
+	commentstyle=\color{dracula-comment},        % Bình luận
+	stringstyle=\color{dracula-yellow},          % Chuỗi
+	numberstyle=\tiny\color{dracula-purple},     % Số dòng
+	identifierstyle=\color{dracula-foreground},  % Tên biến
+	tabsize=4,                                   % Kích thước tab
+%	frame=single,                                % Khung xung quanh
+	showspaces=false,                            % Không hiển thị khoảng trắng
+	showstringspaces=false,                      % Không hiển thị khoảng trắng trong chuỗi
+	showtabs=false,                              % Không hiển thị tab
+	numbers=left,                                % Đánh số dòng bên trái
+	breaklines=true,                             % Tự động xuống dòng
+	breakatwhitespace=true,                      % Xuống dòng tại khoảng trắng
+	captionpos=b,                                 % Vị trí chú thích ở dưới
+	keywords={cv2, cv}
+}
+
 
 \newcommand{\applysectionstyle}{\titleformat{\section}[block]
 	{\bfseries\huge}    % Định dạng cho section (đậm và kích thước chữ lớn)
@@ -124,7 +165,7 @@
 				\\
 				\multicolumn{1}{l}{\textbf{{\Large Bài tập lớn}}}\\
 				\\
-				\textbf{{\Huge Tiêu đề}}\\
+				\textbf{{\Huge Khớp đặc trưng giữa các hình ảnh}}\\
 				\\
 				\hline
 			\end{tabular}
@@ -187,7 +228,6 @@
 \input{introduction}
 \input{theory}
 \input{methodology}
-\input{experiments_results}
 \input{evaluation}
 \input{conclusion}
 \input{bibliography}
