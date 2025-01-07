@@ -1,12 +1,84 @@
 \newpage
 \section{Cơ Sở Lý Thuyết}
-\subsection{Các phương pháp phát hiện đặc trưng phổ biến}
+\subsection{Trích chọn biên ảnh}
+Biên ảnh là điểm mà tại đó có sự thay đổi đột ngột về giá trị điểm ảnh só với các điểm lân cận. Xác định được biên ảnh là tiền đề quan trọng để xác định hình dáng và thông tin tổng thể của một đối tượng trong ảnh.\\
+
+Hiệu quả của kỹ thuật dò biên được đánh giá qua các tiêu chí:
+\begin{itemize}
+	\item Bền vững với nhiều (robust to noise): Lọc ra được các điểm biên và các điểm nhiễu vì các điểm này đều có tần số cao.
+	\item Phát hiện chính xác vị trí điểm biên (good localization)
+	\item Phát hiện đúng điểm biên (single response): những điểm không phải biên thì không được ghi nhận vào kết quả trả về.
+\end{itemize}
+ 
+Sau đây là những kỹ thuật dò biên cơ bản và phổ biến
+\subsubsection{Kỹ thuật gradient}
+Gradient là một đại lượng biểu thị cho sự thay đổi của một giá trị điểm ảnh theo một hướng nào đó. Trong kỹ thuật gradient, vector gradient được dùng để xác định biên ảnh. Vector gradient được thể hiện bằng hai độ đo là:
+\begin{itemize}
+	\item Biên độ gradient: mức độ thay đổi của giá trị điểm ảnh.
+	\item Hướng gradient: hướng của vector pháp tuyến vuông góc với đường biên tại điểm ảnh đang xét.
+\end{itemize}
+Muốn xác định được đường biên thì phải xác định được các điểm mà tại đó biên độ gradient đạt cực đại cục bộ (hoặc lớn hơn một ngưỡng nào đó). Tiếp theo, vector chỉ phương của đường biên có thể được tính toán từ hướng của gradient cộng cho $ 90^\circ $.
+
+\subsubsection{Kỹ thuật Canny}
+
+Kỹ thuật canny là một trong những kỹ thuật dó biên tốt. Nó đáp ứng đủ các tiêu chí đánh giá của giải thuật và cho ra kết quả chính xác hơn kỹ thuật gradient. Kỹ thuật canny bao gồm nhiều bước:
+\begin{enumerate}
+	\item Lọc nhiễu: Giảm bớt sự ảnh hưởng của nhiễu, làm mượt ảnh bằng cách sử dụng bộ lọc thông thấp Gaussian.
+	\item Tìm gradients: Tương tự như kỹ thuật gradient, thuật toán sử dụng mặt nạ Sobel để tính vector gradient tại mỗi điểm ảnh.
+	\item Loại các điểm không cực đại (non-maximum suppresion): Làm mỏng đường biên bằng cách loại bỏ những điểm không cực đại.
+	\item Phân ngưỡng kép (double threshholding): Không giống như kỹ thuật dựa trên gradient chỉ dùng một giá trị ngưỡng để để xác định điểm biên, kỹ thuật Canny dùng ngưỡng kép bao gồm một ngưỡng cao và một ngưỡng thấp.
+\end{enumerate}
+\subsection{Các kỹ thuật dò tìm điểm khóa phổ biến}
+\subsubsection{Bộ dò tìm điểm góc (Corner detection)}
+Điểm góc là những điểm giao của ít nhất hai đường biên. Một thuật toán dò tìm điểm góc phổ biến là Haris Corner detector.\\
+
+Nguyên lý của bộ dò tìm này là dùng một của sổ có kích thước nhỏ để quét qua mọi vị trí trên ảnh nhằm phân lại các vị trí đó thành:
+\begin{itemize}
+	\item Vùng đồng nhất: điểm ảnh trong vùng này khá giống với các điểm ảnh lân cận theo mọi hướng.
+	\item Vị trí biên ảnh: các điểm trên vị trí này khá giống với các điểm lân cận trong cửa sổ theo hướng của đường biên.
+	\item Vị trí điểm góc: Các điểm góc là những điểm rất khác so với các điểm ảnh lân cận theo mọi hướng.
+\end{itemize}
+\subsubsection{Bộ dò tìm blob}
+Blob là một đặc trưng chỉ một vùng ảnh mà các điểm ảnh trong vùng tương đồng nhau về mức xám hoặc màu. Bản chất của việc dò tìm blob là tìm những điểm đặc trưng (interest point) sao cho những điểm này là cục trị địa phương của một hàm số nào đó. Có hai hàm phổ biến để tìm blob là LoG (Lapalce of Gaussian) và DoG (Difference of Gaussian).
+
+\subsection{Các phương pháp mô tả đặc trưng phổ biến}
+Sau khi các định được các điểm khóa, các điểm này cần phải được đặc tả để xác định tính đại diện của chúng. Bộ mô tả đặc trưng là một biễu diễn số học của một vùng trong ảnh tương ứng với một điểm đặc trưng. Nhờ có bộ mô tả thì ta mới có cơ sở để đối sánh các điểm khóa.
+
 \subsubsection{Scale-invariant feature transform (SIFT)}
+Mỗi điểm khóa sẽ được đặc tả bằng một vector số thực 128 chứa thông tin về biên độ và hướng của gradient của các điểm lân cận điểm khóa. Đúng như cái tên của nó SIFT cho ra kết quả bền vùng với phép tỷ lệ. Không chỉ có thế, bộ mô tả này còn bền vững với các phép biến đổi ảnh thường thấy như phép xoay, dịch chuyển hay sự tăng giảm độ sáng ảnh.
+
 \subsubsection{Speeded up robust features (SURF)}
-\subsubsection{Oriented FAST and rotated BRIEF (ORB)}
+Bộ mô tả SURF là một thay thế nhằm giữ vững tính chính xác cao như SIFT những cải thiện đáng kể về hiệu năng tính toán. Bộ mô tả SURF được xây dựng bằng cách thống kê những đặc trưng về histogram của ảnh dựa trên các đáp ứng của hàm wavelet dạng Haar. Kích thước của bộ mô tả SURF là một vector 64 chiều bao gồm 16 histogram, mỗi histogram 4 chiều.
+
+\subsubsection{Binary robust independent elementary features (BRIEF)}
+
+BRIEF biễu diễn một điểm khóa bằng mỗi chuỗi các giá trị nhị phân. Các giá trị nhị phân này là kết quả của sự so sánh mức xám tại hai điểm bất kỳ trong một tập thuộc ảnh. Mỗi tập này có thể được sinh bằng 5 cách cấu hình. BRIEFT hiệu quả hơn hẳn 2 bộ mô tả trước đó trong tính toán thời gian thực với độ phức tạp tính toán thấp hơn.
+
 \subsection{Các phương pháp đối sánh đặc trưng phổ biến}
-\subsubsection{Phương pháp Brute-Force}
-\subsubsection{Phương pháp K-Nearest Neighbors}
-\subsubsection{Phương pháp RANSAC}
-\subsubsection{Phương pháp FLANN}
-\subsubsection{Phương pháp học sâu trong khớp đặc trưng}
+Sau khi đã trích chọn được tập các vector đặc trưng (feature vector) hoặc bộ mô tả (descriptors) về đối tượng của ảnh, các bộ mô tả này sẽ được đem đi đối chiếu với một cơ sử dữ liệu chứa các bản mẫu.
+
+\subsubsection{Đối sánh sử dụng brute-force}
+Đối sánh dựa trên tìm kiếm vét cạn có thể được phát biểu bằng một bài toán:
+\begin{itemize}
+	\item $X$: cơ sở dữ liệu các vector đặc trưng.
+	\item $q$: vector truy vấn.
+\end{itemize}
+Bài toán được giải quyết bằng cách duyệt qua mọi phần tử $p \in X$ và tính khoảng cách 
+\[ h = dist(p, q) \]
+ Khi có khoảng cách nhỏ hơn thì cập nhật lại h với giá trị nhỏ nhất (tối ưu nhất).
+ 
+\subsubsection{Đối sánh dựa trên lập chỉ mục}
+Thông thường, đối sánh dựa trên lập chỉ mục là một lựa chọn tối ưu hơn tìm kiếm vét cạn vì tối ưu về mặt thời gian. Trong cách tiếp cận này, cơ sở dữ liệu sẽ được tổ chức và sắp xếp lại sao cho quá trình duyệt chỉ thực hiện trên một phần nhỏ các bản mẫu mà vẫn cho ra kết quả tốt nhất. Kỹ thuật này có thể được chia thành 3 phương pháp:
+\begin{itemize}
+	\item Dựa trên phân cụm (clustering-based approach): lập chỉ mục bằng một cấu trúc dữ liệu cây phân cấp. Ở mỗi cấp của cây, một thuật toán phân cụm được dùng để chia tập dữ liệu ở một nút thành nhiều cụm con. Quá trình này được lặp với mỗi cụm con cho đến khi số lượng đặc trưng của mỗi cụm con đủ nhỏ. Khi đối sánh, khoảng cách h sẽ được tính từ vector truy vấn đến mỗi nút con của nút gốc. Nút con có kết quả nhỏ nhất sẽ được chọn để tiếp tục duyệt theo chiều sâu cho đến khi tìm đến một nút lá. Một thuật toán phân cụm phổ biến là Kd-Tree thuộc họ Nearest neighbor search.
+	\item Dựa trên phân hoạch không gian (space-based approach): tương đối giống lập chỉ mục bằng cây phân cấp nhưng cách tiếp cận này sử dụng phương pháp phân hoạch không gian để chia nhỏ tập các vector đặc trưng. Cấu trúc dữ liệu được tạo ra là cây phân hoạch (cây cân bằng). Thuật toán phân hoạch phổ biến là cây tìm kiếm KD-tree, tức là tập ban đầu sẽ được sắp xếp và chia 2 dựa trên điểm trung vị.
+	\item Dựa trên hàm băm (hashing-based approach): phương pháp lập chỉ mục này chú trọng xây dựng một họ các hàm băm sao cho xác suất các điểm gần nhau được băm vào cùng một ô tỷ lệ thuận với sự giống nhau của các điểm đó.
+\end{itemize}
+\subsection{Các kỹ thuật hiệu chỉnh sau đối sánh}
+Hiệu chỉnh sau đối sánh là bước hậu xử lý để loại ra những đối sánh sai giữa ảnh đầu vào và ảnh mẫu trong cơ sở dữ liệu. 
+
+\subsubsection{Kỹ thuật RANSAC}
+RANSAC được dùng để hậu xử lý cái sai số của quá trình đối sánh bằng cách kiểm tra tính nhất quán hình học. Tính nhất quán hình học này được biểu diễn bằng một mô hình biến đổi (phép biến đối). Để xây dựng mô hình biến đổi, ta cần xác định các tham số của nó từ tập dữ liệu quan sát ban đầu bao gồm cả dữ liệu sạch (inliners) và dữ liệu nhiễu (outliers). Dữ liệu sạch là những điểm dữ liệu thỏa mãn mô hình biến đổi cần xây dựng và ngược lại, dữ liệu nhiều sẽ không thỏa mãn mô hình. Mức độ hiệu quả của RANSAC chỉ được tận dụng khi số lượng các điểm dữ liệu sách chiếm hơn phân nửa.
+
+\subsubsection{Kỹ thuật biến đổi Hough}
+Kỹ thuật biến đổi Hough cũng có phần tương đồng với kỹ thuật RANSAC. Nhưng thay vì chỉ tìm 1 mô hình biến đổi, kỹ thuật này sẽ tìm nhiều mô hình tham số tiềm năng. Thay vì ước lượng các tham sô ngẫu nhiên, kỹ thuật biến đổi Hough tiếp cận bằng phương pháp bỏ phiếu (voting) bằng một bảng băm đa chiều với các khóa là tham số của mô hình biến đổi. Giá trị của hàm băm là số lượng các đối sánh nhất quán tương ứng với tham số của phép biến đổi. Các mô hình biến đổi được cho là tiềm năng khi có số lượng được "bỏ phiếu" ít nhất là 3.
