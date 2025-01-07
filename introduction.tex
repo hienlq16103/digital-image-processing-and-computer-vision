@@ -1,6 +1,25 @@
 \newpage
 \section{Giới Thiệu}
 \subsection{Tổng quan về bài toán "Feature Matching"}
+Feature mathcing là một kỹ thuật quan trọng trong thị giác máy tính. Feature matching hay đối sánh đặc trưng ảnh giúp máy tính có khả năng nhìn và nhận dạng được đối tượng thông qua đầu vào là ảnh hoặc video. Ý tưởng của thuật toán đối sánh đặc trưng là so sánh các điểm tương quan giữa hai ảnh về cùng một vật thể hoặc bối cảnh. Để nhận dạng được một ảnh thì một hệ thống thị giác máy tính bao gồm 4 thành phần chính được sử dụng. 4 thành phần chính này là:
+
+\begin{enumerate}
+	\item Dò tìm điểm khóa (keypoint detection)
+	\item Mô tả điểm khóa (keypoint description)
+	\item Lập chỉ mục các bộ mô tả (descriptor indexing)
+	\item Đối sánh (matching)
+\end{enumerate}
+
+Trong đó hai thành phần giữ vai trò quan trọng nhất là mô tả điểm khóa và lập chỉ mục vì chúng quyết định đến độ chính xác và thời gian xử lý của quá trình đối sánh.\\
+
+Feature matching có ý nghĩa rất lớn trong thực tế. Các ứng dụng có thể được kể đến là image alignment, phục dựng bối cảnh 3D từ ảnh 2D, theo dõi chuyển động, nhận diện vật thể...
+
 \subsection{Các vấn đề chính trong việc khớp đặc trưng}
+Trước khi tiến hành khớp đặc trưng ảnh, ảnh phải trải qua một bước trích chọn đặc trưng ảnh. Việc trích chọn được coi là thành công khi các đặc trưng thỏa mãn các tính chất bất biến sau: Bất biến với phép tỷ lệ (sacle invariance), bất biến với phép xoay (rotation invariance), bất biến với cường độ sáng (intensity invariance). Dù ở trong điều kiện nào, kết quả trả về trong các trường hợp vẫn phải là một đặc trưng nhất quán của đối tượng đó. Bên cạnh đó, phép trích chọn đặc trưng cũng cần thỏa mãn những tính chất như: tính độc nhất và đại diện (distinctiveness); tính chính xác về vị trí, hình dạng và tỷ lệ; tính hiệu quả; bền vững khi ảnh bị nhiễu, nhòe, nén hoặc biến đổi về hình dạng. Khi đã đảm bảo được tính ổn định và chính xác của các đặc trưng, bước đối sánh đặc trưng mới có thể được tiến hành hiệu quả.\\
+
+Thuật toán đối sánh đặc trưng đơn giản nhất là tìm kiếm vét cạn cơ sở dữ liệu chứa tập các bộ mô tả mẫu. Vấn đề của cách tiếp cận này là nếu số lượng bộ mô tả mẫu lớn và không gian có nhiều chiều thì độ phức tạp tính toán cao, tìm kiếm lâu. Do đó, giải thuật này không đáp ứng được yêu cầu về thời gian trong các ứng dụng thời gian thực.\\
+
+Để khắc phục nhược điểm trên, kỹ thuật đối sánh gần đúng sẽ được sử dụng để tối ưu về mặt thời gian. Kỹ thuật này chú trọng lập chỉ mục (descriptor indexing) dựa trên bộ mô tả đã được xây dựng. Từ đó, việc đối sánh ảnh chỉ được thực hiện trên một phần nhỏ của các bản mẫu tiềm năng mà không nhất thiết phải vét cạn cơ sở dữ liệu. Trong trường hợp lý tưởng, kết quả của kỹ thuật này là một tập các đối sánh sao cho mỗi đối sánh là một ánh xạ một-một giữa một đặc trưng của ảnh đầu vào và một đặc trưng tương ứng trong ảnh mẫu. Tuy nhiên trong thực tế, kết quả thu được thường là những ánh xạ một-nhiều hoặc nhiều-nhiều. Bên cạnh đó, kỹ thuật này còn có những hạn chế khác như hiệu năng tìm kiềm chính xác có thể không cao, yêu cầu nhiều không gian bộ nhớ, xây dựng cấu trúc chỉ mục phức tạp, độ phức tạp tính toán cao... Do đó, một bước hậu xử lý các đối sánh là cần thiết để loại bỏ những đối sánh sai.
+
 \subsection{Mục tiêu nghiên cứu}
-\subsection{Cấu trúc bài tiểu luận}
+Mục tiêu nghiên cứu của đề tài này là hiểu được quy trình để nhận dạng các vật thể cần quan tâm trong ảnh và xác định được vật thể đó có trùng khớp với các mẫu có sẵn dù vật thể đang xét được thu với nhiều điều kiện khác nhau như xoay, thay đổi kích cỡ, thay đổi vị trí, góc nhìn hoặc điều kiện sáng. Thêm vào đó, sinh viên có cơ hội thực hành và hiểu hơn nữa tầm quan trọng của feature matching trong các ứng dụng thực tế của lĩnh vực xử lý ảnh số và thị giác máy tính.
